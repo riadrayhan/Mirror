@@ -1,0 +1,34 @@
+[
+    {
+        "merged": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-merged_res-31:\\drawable_input_bg.xml.flat",
+        "source": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-main-33:\\drawable\\input_bg.xml"
+    },
+    {
+        "merged": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-merged_res-31:\\drawable_banner_bg.xml.flat",
+        "source": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-main-33:\\drawable\\banner_bg.xml"
+    },
+    {
+        "merged": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-merged_res-31:\\drawable_dot_green.xml.flat",
+        "source": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-main-33:\\drawable\\dot_green.xml"
+    },
+    {
+        "merged": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-merged_res-31:\\drawable_dot_gray.xml.flat",
+        "source": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-main-33:\\drawable\\dot_gray.xml"
+    },
+    {
+        "merged": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-merged_res-31:\\drawable_card_bg.xml.flat",
+        "source": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-main-33:\\drawable\\card_bg.xml"
+    },
+    {
+        "merged": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-merged_res-31:\\drawable_dot_red.xml.flat",
+        "source": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-main-33:\\drawable\\dot_red.xml"
+    },
+    {
+        "merged": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-merged_res-31:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\BM COMPUTERS\\.gradle\\daemon\\8.5\\com.screenmirror.app-main-33:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "com.screenmirror.app-merged_res-31:/layout_activity_main.xml.flat",
+        "source": "com.screenmirror.app-main-33:/layout/activity_main.xml"
+    }
+]

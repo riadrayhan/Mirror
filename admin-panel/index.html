@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Screen Mirror — Admin</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg0: #08080f;
+  --bg1: #12121e;
+  --bg2: #1a1a2a;
+  --bg3: #22223a;
+  --accent: #6c5ce7;
+  --accent2: #a29bfe;
+  --green: #00cec9;
+  --red: #ff6b6b;
+  --amber: #fdcb6e;
+  --text1: #e8e8f0;
+  --text2: #9090b0;
+  --text3: #55556a;
+  --border: rgba(255,255,255,0.07);
+}
+
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       background: var(--bg0); color: var(--text1); height: 100vh;
+       display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── Topbar ── */
+.topbar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 0 20px; height: 52px;
+  background: var(--bg1); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.logo { font-size: 15px; font-weight: 700; color: var(--text1); letter-spacing: -0.3px; }
+.logo span { color: var(--accent2); }
+.topbar-sep { flex: 1; }
+.server-status { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text2); }
+.server-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); transition: background .3s; }
+.server-dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+/* ── Layout ── */
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 260px; flex-shrink: 0;
+  background: var(--bg1); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sidebar-head {
+  padding: 12px 16px; font-size: 10px; letter-spacing: 1.2px;
+  color: var(--text3); text-transform: uppercase;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.device-list { flex: 1; overflow-y: auto; }
+.device-list::-webkit-scrollbar { width: 4px; }
+.device-list::-webkit-scrollbar-track { background: transparent; }
+.device-list::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
+
+.device-item {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background .15s;
+  border-left: 3px solid transparent;
+}
+.device-item:hover { background: var(--bg2); }
+.device-item.active { background: rgba(108,92,231,0.12); border-left-color: var(--accent); }
+.device-name { font-size: 13px; font-weight: 600; color: var(--text1); margin-bottom: 3px; }
+.device-meta { font-size: 11px; color: var(--text3); margin-bottom: 5px; font-family: monospace; }
+.device-row  { display: flex; align-items: center; gap: 5px; font-size: 11px; }
+.status-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 600;
+}
+.pill-online   { background: rgba(0,206,201,0.12); color: var(--green); }
+.pill-stream   { background: rgba(255,107,107,0.12); color: var(--red); }
+.pill-denied   { background: rgba(85,85,106,0.2);   color: var(--text3); }
+.pulse { width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+         animation: blink 1.2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.no-devices { padding: 40px 16px; text-align: center; color: var(--text3); font-size: 13px; line-height: 1.8; }
+
+/* ── Main content ── */
+.content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+/* Placeholder */
+.placeholder {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; color: var(--text3); gap: 12px;
+}
+.placeholder .icon { font-size: 52px; opacity: .4; }
+.placeholder p { font-size: 14px; }
+
+/* Viewer */
+#viewer { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+
+/* Viewer topbar */
+.viewer-bar {
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  padding: 10px 16px; background: var(--bg1); border-bottom: 1px solid var(--border);
+}
+.viewer-title { font-size: 14px; font-weight: 600; }
+.viewer-sep { flex: 1; }
+
+/* Stats strip */
+.stats-strip {
+  display: flex; gap: 16px; align-items: center;
+  font-size: 11px; color: var(--text2);
+}
+.stat { display: flex; align-items: center; gap: 4px; }
+.stat-val { font-weight: 700; color: var(--text1); font-family: monospace; font-size: 12px; }
+.stat-val.good { color: var(--green); }
+.stat-val.mid  { color: var(--amber); }
+.stat-val.bad  { color: var(--red);   }
+
+/* Buttons */
+.btn {
+  padding: 7px 14px; border: none; border-radius: 7px;
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #7c6cf5; }
+.btn-primary:disabled { opacity: .4; cursor: default; }
+.btn-danger  { background: rgba(255,107,107,0.15); color: var(--red);
+               border: 1px solid rgba(255,107,107,0.3); }
+.btn-danger:hover { background: rgba(255,107,107,0.25); }
+.btn-ghost   { background: transparent; color: var(--text2);
+               border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text1); border-color: var(--text3); }
+
+/* Quality controls */
+.quality-row {
+  display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--text2);
+}
+.quality-row input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; }
+.quality-row label { white-space: nowrap; }
+.quality-row span  { color: var(--accent2); font-weight: 700; font-family: monospace; }
+
+/* Screen area */
+.screen-area {
+  flex: 1; position: relative; display: flex;
+  align-items: center; justify-content: center;
+  background: #030308; overflow: hidden;
+}
+#screen-canvas {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain; display: none;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+.screen-overlay {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--text3); gap: 10px; pointer-events: none;
+}
+.screen-overlay.hidden { display: none; }
+.overlay-icon { font-size: 44px; opacity: .3; }
+.overlay-text { font-size: 13px; }
+
+/* Latency bar */
+.latency-bar {
+  position: absolute; bottom: 12px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 10px; align-items: center;
+  background: rgba(8,8,15,0.85); backdrop-filter: blur(8px);
+  border: 1px solid var(--border); border-radius: 20px;
+  padding: 5px 14px; font-size: 11px; color: var(--text2);
+  transition: opacity .3s;
+}
+.latency-bar.hidden { opacity: 0; pointer-events: none; }
+.lb-item { display: flex; gap: 5px; align-items: center; }
+.lb-val { font-weight: 700; font-family: monospace; font-size: 12px; }
+
+/* Device info panel (right) */
+.info-panel {
+  width: 220px; flex-shrink: 0; background: var(--bg1);
+  border-left: 1px solid var(--border); overflow-y: auto;
+  padding: 14px; display: none; flex-direction: column; gap: 14px;
+}
+.info-panel.visible { display: flex; }
+.info-section h4 {
+  font-size: 9px; letter-spacing: 1.2px; color: var(--text3);
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.info-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.info-label { font-size: 11px; color: var(--text3); }
+.info-value { font-size: 11px; color: var(--text1); font-weight: 600; text-align: right; max-width: 120px; word-break: break-all; }
+
+/* Battery bar */
+.battery-bar-outer { height: 5px; background: var(--bg3); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+.battery-bar-inner { height: 100%; border-radius: 3px; transition: width .5s, background .5s; }
+
+/* Toast */
+#toast {
+  position: fixed; bottom: 20px; right: 20px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 16px; font-size: 13px;
+  transform: translateY(60px); opacity: 0; transition: all .25s; z-index: 9999;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+
+/* Smooth frame transitions */
+#screen-canvas { transition: opacity .05s linear; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Screen<span>Mirror</span></div>
+  <div class="topbar-sep"></div>
+  <div class="server-status">
+    <div class="server-dot" id="srv-dot"></div>
+    <span id="srv-label">Connecting…</span>
+  </div>
+  <button class="btn btn-ghost" onclick="toggleInfoPanel()">ⓘ Info</button>
+</div>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-head">Devices</div>
+    <div class="device-list" id="device-list">
+      <div class="no-devices">
+        <div style="font-size:28px;margin-bottom:8px">📱</div>
+        No devices connected<br>
+        <span style="font-size:11px">Open the Android app and connect</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="content">
+
+    <div class="placeholder" id="placeholder">
+      <div class="icon">🖥</div>
+      <p>Select a device from the sidebar</p>
+    </div>
+
+    <div id="viewer">
+      <!-- Viewer bar -->
+      <div class="viewer-bar">
+        <div class="viewer-title" id="viewer-title">Device</div>
+        <div class="stats-strip">
+          <div class="stat">FPS <span class="stat-val" id="stat-fps">—</span></div>
+          <div class="stat">Latency <span class="stat-val" id="stat-lat">—</span></div>
+          <div class="stat">Frame <span class="stat-val" id="stat-frame">—</span></div>
+          <div class="stat">Size <span class="stat-val" id="stat-size">—</span></div>
+        </div>
+        <div class="viewer-sep"></div>
+        <!-- Quality controls -->
+        <div class="quality-row">
+          <label>Q <span id="lbl-q">30</span>%
+            <input type="range" min="10" max="95" value="30" id="sl-quality" oninput="onQualityChange()">
+          </label>
+          <label>FPS <span id="lbl-fps">30</span>
+            <input type="range" min="1" max="30" value="30" id="sl-fps" oninput="onFpsChange()">
+          </label>
+        </div>
+        <button class="btn btn-primary" id="btn-req" onclick="requestPerm()">Request Permission</button>
+        <button class="btn btn-danger"  id="btn-stop" style="display:none" onclick="stopWatching()">Stop</button>
+      </div>
+
+      <!-- Screen + info panel -->
+      <div style="display:flex;flex:1;overflow:hidden">
+        <div class="screen-area">
+          <canvas id="screen-canvas"></canvas>
+          <div class="screen-overlay" id="overlay">
+            <div class="overlay-icon" id="overlay-icon"></div>
+            <div class="overlay-text" id="overlay-text"></div>
+          </div>
+          <div class="latency-bar hidden" id="latency-bar">
+            <div class="lb-item">📡 <span class="lb-val" id="lb-fps">0</span> fps</div>
+            <div class="lb-item">⏱ <span class="lb-val" id="lb-lat">0</span> ms</div>
+            <div class="lb-item">📦 <span class="lb-val" id="lb-kb">0</span> KB</div>
+          </div>
+        </div>
+
+        <!-- Info panel -->
+        <div class="info-panel" id="info-panel">
+          <div class="info-section">
+            <h4>Device</h4>
+            <div class="info-row"><span class="info-label">Name</span><span class="info-value" id="ip-name">—</span></div>
+            <div class="info-row"><span class="info-label">Model</span><span class="info-value" id="ip-model">—</span></div>
+            <div class="info-row"><span class="info-label">Android</span><span class="info-value" id="ip-android">—</span></div>
+            <div class="info-row"><span class="info-label">Resolution</span><span class="info-value" id="ip-res">—</span></div>
+          </div>
+          <div class="info-section">
+            <h4>Battery</h4>
+            <div class="info-row"><span class="info-label">Level</span><span class="info-value" id="ip-bat">—</span></div>
+            <div class="battery-bar-outer"><div class="battery-bar-inner" id="ip-bat-bar" style="width:0%"></div></div>
+          </div>
+          <div class="info-section">
+            <h4>Session</h4>
+            <div class="info-row"><span class="info-label">Frames recv</span><span class="info-value" id="ip-frames">0</span></div>
+            <div class="info-row"><span class="info-label">Connected</span><span class="info-value" id="ip-since">—</span></div>
+            <div class="info-row"><span class="info-label">Status</span><span class="info-value" id="ip-status">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────
+const SERVER = window.location.origin;
+let socket = null;
+const devices = {};
+let selected  = null;
+
+// Frame rendering
+const canvas  = document.getElementById('screen-canvas');
+const ctx     = canvas.getContext('2d');
+let imgPool   = [new Image(), new Image()];   // double-buffer pool
+let poolIdx   = 0;
+let frameCount   = 0;
+let framesRecv   = 0;
+let lastFrameTime = 0;
+let fpsSmooth = 0;
+let qualityTimer = null;
+
+// ── Connect ────────────────────────────────────────
+function connect() {
+  socket = io('/admin', { transports: ['websocket'] });
+
+  socket.on('connect', () => {
+    setSrvStatus(true);
+    toast('Connected to server');
+  });
+  socket.on('disconnect', () => setSrvStatus(false));
+
+  socket.on('device_list', ({ devices: list }) => {
+    list.forEach(addDevice);
+    renderList();
+  });
+  socket.on('device_connected', d => {
+    addDevice(d);
+    renderList();
+    toast(`📱 ${d.deviceName} connected`);
+  });
+  socket.on('device_disconnected', ({ socketId }) => {
+    if (selected && selected.socketId === socketId) resetViewer();
+    delete devices[socketId];
+    renderList();
+  });
+  socket.on('device_info_update', ({ socketId, ...data }) => {
+    if (devices[socketId]) Object.assign(devices[socketId], data);
+    if (selected && selected.socketId === socketId) updateInfoPanel(devices[socketId]);
+    renderList();
+  });
+  socket.on('permission_response', ({ socketId, approved }) => {
+    if (approved) {
+      if (selected && selected.socketId === socketId) startStreamUI();
+      toast('✅ User approved screen sharing');
+    } else {
+      toast('❌ Permission denied by user');
+      setOverlay('lock', '');
+    }
+  });
+
+  // ── Frame rendering ────────────────────────────
+  socket.on('screen_frame', ({ socketId, frame, width, height, fps, timestamp }) => {
+    if (!selected || selected.socketId !== socketId) return;
+
+    framesRecv++;
+    const now = Date.now();
+    const latency = now - (timestamp || now);
+
+    // Smooth FPS
+    if (lastFrameTime) {
+      const delta = now - lastFrameTime;
+      fpsSmooth = 0.75 * fpsSmooth + 0.25 * (1000 / Math.max(delta, 1));
+    }
+    lastFrameTime = now;
+
+    // Update stats
+    const fpsStr = fpsSmooth.toFixed(1);
+    const fpsColor = fpsSmooth > 12 ? 'good' : fpsSmooth > 6 ? 'mid' : 'bad';
+    const latColor  = latency < 100 ? 'good' : latency < 300 ? 'mid' : 'bad';
+
+    document.getElementById('stat-fps').textContent   = fpsStr;
+    document.getElementById('stat-fps').className     = 'stat-val ' + fpsColor;
+    document.getElementById('stat-lat').textContent   = latency + 'ms';
+    document.getElementById('stat-lat').className     = 'stat-val ' + latColor;
+    document.getElementById('stat-frame').textContent = '#' + framesRecv;
+    document.getElementById('ip-frames').textContent  = framesRecv;
+
+    // Latency bar
+    document.getElementById('lb-fps').textContent = Math.round(fpsSmooth);
+    document.getElementById('lb-lat').textContent = latency;
+
+    // Use double-buffer: draw to off-screen image, then blit
+    const img = imgPool[poolIdx];
+    poolIdx = 1 - poolIdx;
+
+    img.onload = () => {
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width  = width  || img.naturalWidth;
+        canvas.height = height || img.naturalHeight;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // First frame
+      if (canvas.style.display === 'none') {
+        canvas.style.display = 'block';
+        document.getElementById('overlay').classList.add('hidden');
+        document.getElementById('latency-bar').classList.remove('hidden');
+      }
+
+      // Frame size
+      const kb = Math.round(frame.length * 0.75 / 1024);
+      document.getElementById('stat-size').textContent = kb + ' KB';
+      document.getElementById('lb-kb').textContent = kb;
+    };
+    img.src = 'data:image/jpeg;base64,' + frame;
+  });
+}
+
+// ── Device list ────────────────────────────────────
+function addDevice(d) { devices[d.socketId] = d; }
+
+function renderList() {
+  const el  = document.getElementById('device-list');
+  const keys = Object.keys(devices);
+  if (!keys.length) {
+    el.innerHTML = `<div class="no-devices">
+      <div style="font-size:28px;margin-bottom:8px">📱</div>
+      No devices connected<br>
+      <span style="font-size:11px">Open the Android app and connect</span>
+    </div>`;
+    return;
+  }
+  el.innerHTML = keys.map(sid => {
+    const d = devices[sid];
+    const isActive = selected && selected.socketId === sid;
+    const pillClass = d.status === 'streaming' ? 'pill-stream'
+                    : d.status === 'connected'  ? 'pill-online' : 'pill-denied';
+    const pillLabel = d.status === 'streaming' ? '● Live'
+                    : d.status === 'connected'  ? '● Online' : '✗ Denied';
+    const bat = d.battery >= 0 ? `🔋${d.battery}%` : '';
+    return `<div class="device-item ${isActive ? 'active' : ''}" onclick="selectDevice('${sid}')">
+      <div class="device-name">${esc(d.deviceName)}</div>
+      <div class="device-meta">${esc(d.manufacturer)} ${esc(d.model)} · Android ${esc(d.androidVersion)}</div>
+      <div class="device-row">
+        <span class="status-pill ${pillClass}">${pillLabel}</span>
+        ${bat ? `<span style="font-size:11px;color:var(--text3)">${bat}</span>` : ''}
+        ${d.fps > 0 ? `<span style="font-size:11px;color:var(--text3)">${d.fps}fps</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Select device ──────────────────────────────────
+function selectDevice(sid) {
+  selected = devices[sid];
+  if (!selected) return;
+
+  // Reset per-session counters
+  framesRecv   = 0;
+  fpsSmooth    = 0;
+  lastFrameTime = 0;
+  canvas.style.display = 'none';
+
+  renderList();
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('viewer').style.display = 'flex';
+  document.getElementById('viewer-title').textContent  = selected.deviceName;
+  document.getElementById('btn-req').style.display  = 'inline-block';
+  document.getElementById('btn-stop').style.display = 'none';
+  document.getElementById('latency-bar').classList.add('hidden');
+
+  updateInfoPanel(selected);
+
+  if (selected.status === 'streaming') {
+    startStreamUI();
+  } else {
+    setOverlay('lock', '');
+  }
+}
+
+function updateInfoPanel(d) {
+  document.getElementById('ip-name').textContent    = d.deviceName    || '—';
+  document.getElementById('ip-model').textContent   = d.model         || '—';
+  document.getElementById('ip-android').textContent = 'Android ' + (d.androidVersion || '?');
+  document.getElementById('ip-res').textContent     = d.screenWidth && d.screenHeight
+      ? `${d.screenWidth}×${d.screenHeight}` : '—';
+  document.getElementById('ip-since').textContent   = d.connectedAt
+      ? new Date(d.connectedAt).toLocaleTimeString() : '—';
+  document.getElementById('ip-status').textContent  = d.status || '—';
+  updateBatteryUI(d.battery);
+}
+
+function updateBatteryUI(level) {
+  if (level < 0) { document.getElementById('ip-bat').textContent = '—'; return; }
+  document.getElementById('ip-bat').textContent = level + '%';
+  const bar = document.getElementById('ip-bat-bar');
+  bar.style.width    = level + '%';
+  bar.style.background = level > 50 ? 'var(--green)' : level > 20 ? 'var(--amber)' : 'var(--red)';
+}
+
+// ── Permission / stream control ────────────────────
+function requestPerm() {
+  if (!selected || !socket) return;
+  socket.emit('request_permission', { targetSocketId: selected.socketId });
+    setOverlay('wait', '');
+  toast('Permission request sent');
+}
+
+function startStreamUI() {
+  document.getElementById('btn-req').style.display  = 'none';
+  document.getElementById('btn-stop').style.display = 'inline-block';
+  setOverlay('wait', '');
+}
+
+function stopWatching() {
+  if (!selected || !socket) return;
+  socket.emit('stop_watching', { targetSocketId: selected.socketId });
+  canvas.style.display = 'none';
+  document.getElementById('latency-bar').classList.add('hidden');
+  document.getElementById('btn-req').style.display  = 'inline-block';
+  document.getElementById('btn-stop').style.display = 'none';
+  setOverlay('lock', 'Click "Request Permission" to start');
+  toast('Screen sharing stopped');
+  if (devices[selected.socketId]) devices[selected.socketId].status = 'connected';
+  renderList();
+}
+
+function resetViewer() {
+  selected = null;
+  canvas.style.display = 'none';
+  document.getElementById('viewer').style.display     = 'none';
+  document.getElementById('placeholder').style.display = 'flex';
+}
+
+// ── Quality controls ────────────────────────────────
+function onQualityChange() {
+  const q = +document.getElementById('sl-quality').value;
+  document.getElementById('lbl-q').textContent = q;
+  clearTimeout(qualityTimer);
+  qualityTimer = setTimeout(() => sendQuality(), 600);
+}
+function onFpsChange() {
+  const f = +document.getElementById('sl-fps').value;
+  document.getElementById('lbl-fps').textContent = f;
+  clearTimeout(qualityTimer);
+  qualityTimer = setTimeout(() => sendQuality(), 600);
+}
+function sendQuality() {
+  if (!selected || !socket) return;
+  const q = +document.getElementById('sl-quality').value;
+  const f = +document.getElementById('sl-fps').value;
+  socket.emit('set_quality', { targetSocketId: selected.socketId, quality: q, fps: f });
+  toast(`Quality → ${q}% @ ${f}fps`);
+}
+
+// ── Info panel toggle ──────────────────────────────
+function toggleInfoPanel() {
+  document.getElementById('info-panel').classList.toggle('visible');
+}
+
+// ── Overlay ────────────────────────────────────────
+function setOverlay(type, text) {
+  const icons = { lock: '🔒', wait: '⏳', error: '⚠️' };
+  document.getElementById('overlay-icon').textContent = icons[type] || '🔒';
+  document.getElementById('overlay-text').textContent = text;
+  document.getElementById('overlay').classList.remove('hidden');
+  canvas.style.display = 'none';
+}
+
+// ── Server status ──────────────────────────────────
+function setSrvStatus(on) {
+  document.getElementById('srv-dot').className   = 'server-dot' + (on ? ' on' : '');
+  document.getElementById('srv-label').textContent = on ? 'Server connected' : 'Server offline';
+}
+
+// ── Toast ──────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Init ───────────────────────────────────────────
+connect();
+</script>
+</body>
+</html>
