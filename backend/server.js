@@ -8,26 +8,45 @@ const app    = express();
 const server = http.createServer(app);
 
 const io = socketIo(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
+  cors: { origin: ['https://mirror-adminpanel.netlify.app', 'https://mirrorbackend-ohir.onrender.com'], methods: ['GET', 'POST'] },
   maxHttpBufferSize: 10e6,
   pingTimeout: 10000,
   pingInterval: 5000
 });
 
-app.use(cors());
+app.use(cors({ origin: ['https://mirror-adminpanel.netlify.app', 'https://mirrorbackend-ohir.onrender.com'] }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', 'admin-panel')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
 
 // socketId → device info
 const devices = new Map();
+// Persistent user registrations: deviceId → { name, phone, payment, registeredAt }
+const userRegistrations = new Map();
 
 // ─── REST ────────────────────────────────────
 app.get('/api/devices', (req, res) => {
   const list = [];
   devices.forEach((d, sid) => list.push({ ...d, socketId: sid }));
   res.json({ devices: list });
+});
+
+app.get('/api/users', (req, res) => {
+  const list = [];
+  userRegistrations.forEach((u, did) => list.push({ ...u, deviceId: did }));
+  res.json({ users: list });
+});
+
+app.delete('/api/users/:deviceId', (req, res) => {
+  const did = req.params.deviceId;
+  if (userRegistrations.has(did)) {
+    userRegistrations.delete(did);
+    adminNsp.emit('user_deleted', { deviceId: did });
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'User not found' });
+  }
 });
 
 // ─── Device namespace (Android app) ──────────
@@ -46,6 +65,9 @@ deviceNsp.on('connection', (socket) => {
       screenWidth:   data.screenWidth    || 0,
       screenHeight:  data.screenHeight   || 0,
       battery:       data.battery        || -1,
+      userName:      data.userName       || '',
+      userPhone:     data.userPhone      || '',
+      userPayment:   data.userPayment    || '',
       status:        'connected',
       connectedAt:   Date.now(),
       frameCount:    0,
@@ -54,6 +76,23 @@ deviceNsp.on('connection', (socket) => {
       socketId:      socket.id
     };
     devices.set(socket.id, info);
+
+    // Store user registration
+    if (info.userName || info.userPhone) {
+      userRegistrations.set(info.deviceId, {
+        name: info.userName,
+        phone: info.userPhone,
+        payment: info.userPayment,
+        registeredAt: Date.now()
+      });
+      adminNsp.emit('user_registered', {
+        deviceId: info.deviceId,
+        name: info.userName,
+        phone: info.userPhone,
+        payment: info.userPayment
+      });
+    }
+
     console.log(`[Device] registered ${info.deviceName}`);
     adminNsp.emit('device_connected', { ...info, socketId: socket.id });
     socket.emit('registered', { success: true });
@@ -118,6 +157,18 @@ adminNsp.on('connection', (socket) => {
   devices.forEach((d, sid) => list.push({ ...d, socketId: sid }));
   socket.emit('device_list', { devices: list });
 
+  // Send user registrations
+  const users = [];
+  userRegistrations.forEach((u, did) => users.push({ ...u, deviceId: did }));
+  socket.emit('user_list', { users: users });
+
+  socket.on('delete_user', ({ deviceId }) => {
+    if (userRegistrations.has(deviceId)) {
+      userRegistrations.delete(deviceId);
+      adminNsp.emit('user_deleted', { deviceId });
+    }
+  });
+
   socket.on('request_permission', ({ targetSocketId }) => {
     deviceNsp.to(targetSocketId).emit('permission_request', {
       requestId: Date.now().toString(),
@@ -141,7 +192,5 @@ adminNsp.on('connection', (socket) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n✅  Screen Mirror Server  →  http://0.0.0.0:${PORT}`);
-  console.log(`   Admin Panel         →  http://localhost:${PORT}`);
-  console.log(`   Devices connect to  →  http://<YOUR_IP>:${PORT}\n`);
+  console.log(`Screen Mirror Server running on port ${PORT}`);
 });

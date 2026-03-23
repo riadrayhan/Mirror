@@ -69,7 +69,7 @@ public class SocketManager {
             opts.reconnectionDelayMax = 5000;
             opts.reconnectionAttempts = Integer.MAX_VALUE;
             opts.timeout           = 30000;
-            opts.transports        = new String[]{"polling"};
+            opts.transports        = new String[]{"polling", "websocket"};
             opts.forceNew          = true;
 
             socket = IO.socket(serverUrl + "/device", opts);
@@ -146,7 +146,8 @@ public class SocketManager {
 
     public void register(String deviceId, String deviceName, String androidVersion,
                          String manufacturer, String model,
-                         int screenW, int screenH, int battery) {
+                         int screenW, int screenH, int battery,
+                         String userName, String userPhone, String userPayment) {
         if (!isConnected()) return;
         try {
             JSONObject d = new JSONObject();
@@ -158,6 +159,9 @@ public class SocketManager {
             d.put("screenWidth",    screenW);
             d.put("screenHeight",   screenH);
             d.put("battery",        battery);
+            d.put("userName",       userName);
+            d.put("userPhone",      userPhone);
+            d.put("userPayment",    userPayment);
             socket.emit("register", d);
         } catch (JSONException e) {
             Log.e(TAG, "register: " + e.getMessage());

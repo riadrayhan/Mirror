@@ -1,0 +1,18 @@
+# Build outputs
+ScreenMirrorApp/.gradle/
+ScreenMirrorApp/app/build/
+ScreenMirrorApp/build/
+ScreenMirrorApp/local.properties
+
+# Node
+backend/node_modules/
+backend/server_output.txt
+backend/tunnel_url.txt
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db

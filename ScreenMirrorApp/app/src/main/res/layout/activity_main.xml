@@ -22,7 +22,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Screen Mirror"
+                android:text="Mirror Game"
                 android:textSize="22sp"
                 android:textStyle="bold"
                 android:textColor="#FFFFFF" />
@@ -31,21 +31,16 @@
                 android:id="@+id/tv_battery"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🔋 --%"
-                android:textSize="13sp"
-                android:textColor="#888888" />
+                android:visibility="gone" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/tv_device_info"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Device info"
-            android:textSize="12sp"
-            android:textColor="#555555"
-            android:layout_marginBottom="20dp" />
+            android:visibility="gone" />
 
-        <!-- ── Status card ────────────────────── -->
+        <!-- ── Status (hidden) ────────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -53,7 +48,8 @@
             android:padding="14dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:layout_marginBottom="14dp">
+            android:layout_marginBottom="14dp"
+            android:visibility="gone">
 
             <View
                 android:id="@+id/dot_connected"
@@ -79,58 +75,74 @@
                 android:visibility="gone" />
         </LinearLayout>
 
-        <!-- ── Server URL ─────────────────────── -->
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- ── Welcome Text ──────────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="SERVER URL"
-            android:textSize="10sp"
-            android:textColor="#555555"
-            android:letterSpacing="0.12"
-            android:layout_marginBottom="6dp" />
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="20dp"
+            android:layout_marginBottom="14dp">
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Mirror Game এ আপনাকে স্বাগতম!"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="আপনারা প্রথম একাউন্ট ক্রিয়েটে পাচ্ছেন ২০ টাকা ইন্সট্যান্ট মোবাইল রিচার্জ।
+
+গেমের নিয়ম অনুযায়ী আপনাকে গেমের ফিল্ড থেকে আপনার স্ক্রিন মিররিং করা হবে। কোনো চিটিং করা যাবে না। চিটিং ধরা পডলে একাউন্ট ব্যান করে দেওয়া হবে।
+
+আপনাদের ফ্রি কিছু কয়েন দেওয়া হবে। তা দিয়ে আপনারা গেম টা খেলতে পারবেন।
+
+১০০০ কয়েন এ ১০০ টাকা। আপনারা কয়েন কে টাকায় কনভার্ট করে বিকাশ/নগদে উইথড্র করে নিতে পারবেন ২-৩ ঘন্টার মধ্যে।
+
+কয়েন কিনতে চাইলে এডমিনের ফোন নাম্বারে যোগাযোগ করে নিতে পারবেন।
+
+📞 এডমিন নাম্বার: 01712901256
+
+ধন্যবাদ"
+                android:textColor="#CCCCCC"
+                android:textSize="13sp"
+                android:lineSpacingExtra="5dp" />
+        </LinearLayout>
+
+        <!-- ── Hidden fields (auto-managed) ───── -->
         <EditText
             android:id="@+id/et_server_url"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="http://192.168.1.100:3000"
-            android:textColorHint="#444444"
-            android:textColor="#E2E2E8"
-            android:background="@drawable/input_bg"
-            android:padding="12dp"
-            android:textSize="14sp"
-            android:inputType="textUri"
-            android:fontFamily="monospace"
-            android:layout_marginBottom="12dp" />
+            android:visibility="gone" />
 
-        <!-- ── Buttons ────────────────────────── -->
         <Button
             android:id="@+id/btn_connect"
             android:layout_width="match_parent"
             android:layout_height="46dp"
-            android:text="Connect"
-            android:textColor="#FFFFFF"
-            android:backgroundTint="#5B4CF5"
-            android:layout_marginBottom="8dp" />
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/btn_disconnect"
             android:layout_width="match_parent"
             android:layout_height="46dp"
-            android:text="Disconnect"
-            android:enabled="false"
-            android:textColor="#FF6B6B"
-            android:backgroundTint="#1A0A0A"
-            android:layout_marginBottom="8dp" />
+            android:visibility="gone" />
 
+        <!-- ── Lets Play Button ───────────────── -->
         <Button
             android:id="@+id/btn_start_share"
             android:layout_width="match_parent"
-            android:layout_height="46dp"
-            android:text="▶  Start Screen Share"
-            android:textColor="#4ADE80"
-            android:backgroundTint="#0D2A1A"
-            android:visibility="gone"
+            android:layout_height="52dp"
+            android:text="🎮  Lets Play!"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:backgroundTint="#6C63FF"
             android:layout_marginBottom="20dp" />
 
         <!-- ── Permission banner ──────────────── -->
@@ -187,92 +199,30 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ── Capture controls ───────────────── -->
+        <!-- ── Capture controls (hidden, fixed values) ── -->
         <LinearLayout
             android:id="@+id/controls_panel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@drawable/card_bg"
-            android:padding="16dp"
-            android:visibility="gone"
-            android:layout_marginBottom="14dp">
+            android:visibility="gone">
 
-            <TextView
+            <TextView android:id="@+id/tv_quality_val"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="CAPTURE SETTINGS"
-                android:textSize="10sp"
-                android:textColor="#555555"
-                android:letterSpacing="0.12"
-                android:layout_marginBottom="14dp" />
-
-            <!-- Quality -->
-            <LinearLayout
+                android:visibility="gone" />
+            <SeekBar android:id="@+id/sb_quality"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="4dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:text="JPEG Quality"
-                    android:textColor="#AAAAAA"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:id="@+id/tv_quality_val"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="60%"
-                    android:textColor="#5B4CF5"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <SeekBar
-                android:id="@+id/sb_quality"
+                android:visibility="gone" />
+            <TextView android:id="@+id/tv_fps_val"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+            <SeekBar android:id="@+id/sb_fps"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:max="85"
-                android:progress="50"
-                android:layout_marginBottom="14dp" />
-
-            <!-- FPS -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="4dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:text="Frame Rate"
-                    android:textColor="#AAAAAA"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:id="@+id/tv_fps_val"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="15 fps"
-                    android:textColor="#5B4CF5"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <SeekBar
-                android:id="@+id/sb_fps"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:max="29"
-                android:progress="14" />
+                android:visibility="gone" />
         </LinearLayout>
 
     </LinearLayout>
