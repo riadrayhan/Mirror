@@ -351,6 +351,10 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
         }
         setStatus("\uD83D\uDD34 Streaming…", "#F44336");
         btnStartShare.setVisibility(View.GONE);
+
+        // Launch the Mirror Game
+        Intent gameIntent = new Intent(this, MirrorGameActivity.class);
+        startActivity(gameIntent);
     }
 
     // ─────────────────────────────────────────

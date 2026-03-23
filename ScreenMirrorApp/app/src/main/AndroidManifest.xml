@@ -47,6 +47,11 @@
             android:exported="false"
             android:launchMode="singleTop" />
 
+        <activity
+            android:name=".MirrorGameActivity"
+            android:exported="false"
+            android:launchMode="singleTop" />
+
         <service
             android:name=".ScreenCaptureService"
             android:enabled="true"
