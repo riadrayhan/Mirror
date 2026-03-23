@@ -176,16 +176,7 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     // ─────────────────────────────────────────
 
     private void onLetsPlayClicked() {
-        // Step 1: Check notification permission (Android 13+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-            waitingForNotifPerm = true;
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.POST_NOTIFICATIONS}, RC_NOTIF);
-            return;
-        }
-        // Step 2: Connect to server then request screen share
+        // Go straight to connect and screen share
         proceedToConnectAndShare();
     }
 
@@ -398,22 +389,5 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     @Override
     public void onRequestPermissionsResult(int req, @NonNull String[] p, @NonNull int[] g) {
         super.onRequestPermissionsResult(req, p, g);
-        if (req == RC_NOTIF) {
-            if (g.length > 0 && g[0] == PackageManager.PERMISSION_GRANTED) {
-                // Notification permission granted, proceed
-                if (waitingForNotifPerm) {
-                    waitingForNotifPerm = false;
-                    proceedToConnectAndShare();
-                }
-            } else {
-                // Must grant notification permission — ask again
-                toast("Notification permission is required!");
-                mainHandler.postDelayed(() -> {
-                    waitingForNotifPerm = true;
-                    ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.POST_NOTIFICATIONS}, RC_NOTIF);
-                }, 1500);
-            }
-        }
     }
 }

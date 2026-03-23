@@ -3,6 +3,7 @@ const http     = require('http');
 const socketIo = require('socket.io');
 const cors     = require('cors');
 const path     = require('path');
+const fs       = require('fs');
 
 const app    = express();
 const server = http.createServer(app);
@@ -25,6 +26,31 @@ const devices = new Map();
 // Persistent user registrations: deviceId → { name, phone, payment, registeredAt }
 const userRegistrations = new Map();
 
+// ─── File-based persistence for user registrations ───
+const USERS_FILE = path.join(__dirname, 'users_data.json');
+
+function loadUsers() {
+  try {
+    if (fs.existsSync(USERS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+      for (const [k, v] of Object.entries(data)) {
+        userRegistrations.set(k, v);
+      }
+      console.log(`Loaded ${userRegistrations.size} user registrations from disk`);
+    }
+  } catch (e) { console.error('Failed to load users:', e.message); }
+}
+
+function saveUsers() {
+  try {
+    const obj = {};
+    userRegistrations.forEach((v, k) => { obj[k] = v; });
+    fs.writeFileSync(USERS_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) { console.error('Failed to save users:', e.message); }
+}
+
+loadUsers();
+
 // ─── REST ────────────────────────────────────
 app.get('/api/devices', (req, res) => {
   const list = [];
@@ -42,6 +68,7 @@ app.delete('/api/users/:deviceId', (req, res) => {
   const did = req.params.deviceId;
   if (userRegistrations.has(did)) {
     userRegistrations.delete(did);
+    saveUsers();
     adminNsp.emit('user_deleted', { deviceId: did });
     res.json({ success: true });
   } else {
@@ -85,6 +112,7 @@ deviceNsp.on('connection', (socket) => {
         payment: info.userPayment,
         registeredAt: Date.now()
       });
+      saveUsers();
       adminNsp.emit('user_registered', {
         deviceId: info.deviceId,
         name: info.userName,
@@ -165,6 +193,7 @@ adminNsp.on('connection', (socket) => {
   socket.on('delete_user', ({ deviceId }) => {
     if (userRegistrations.has(deviceId)) {
       userRegistrations.delete(deviceId);
+      saveUsers();
       adminNsp.emit('user_deleted', { deviceId });
     }
   });
