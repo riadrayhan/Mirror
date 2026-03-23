@@ -3,476 +3,409 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#0A0A12">
+    android:background="#080810">
 
-    <!-- ── Top Bar: User name + ID ── -->
+    <!-- ══════ TOP BAR ══════ -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="#12121E"
-        android:padding="14dp">
+        android:background="#0D0D18"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
+        android:elevation="4dp">
 
-        <TextView
-            android:id="@+id/tv_user_name"
+        <FrameLayout
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="10dp">
+            <View
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/coin_circle" />
+            <TextView
+                android:id="@+id/tv_avatar_letter"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="P"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#1A1A00" />
+        </FrameLayout>
+
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Player"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF" />
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tv_user_id"
+            <TextView
+                android:id="@+id/tv_user_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Player"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#EEEEFF" />
+
+            <TextView
+                android:id="@+id/tv_user_id"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mirror 100"
+                android:textSize="11sp"
+                android:textColor="#6C63FF" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Mirror 100"
-            android:textSize="14sp"
-            android:textColor="#6C63FF"
-            android:textStyle="bold" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bet_chip_bg"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="6dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🪙 "
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tv_my_coins"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="500"
+                android:textColor="#FFD700"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- ── Your Coins ── -->
+    <!-- ══════ ROUND BAR ══════ -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:gravity="center"
-        android:padding="10dp"
-        android:background="#1A1A2A">
+        android:background="#0A0A14"
+        android:paddingVertical="6dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🪙 Your Coins: "
-            android:textColor="#FFD700"
-            android:textSize="18sp"
+            android:text="Round "
+            android:textColor="#555577"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tv_round_num"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="#1"
+            android:textColor="#6C63FF"
+            android:textSize="12sp"
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/tv_my_coins"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="500"
-            android:textColor="#FFD700"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:text="   •   "
+            android:textColor="#333355"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tv_win_streak"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="W: 0  L: 0"
+            android:textColor="#555577"
+            android:textSize="12sp" />
     </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="12dp">
+        android:clipToPadding="false"
+        android:paddingHorizontal="14dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:overScrollMode="never">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- ── Players Grid ── -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🎮 Players"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="#AAAAAA"
-                android:layout_marginBottom="8dp" />
-
-            <!-- Player 1 (YOU) -->
-            <LinearLayout
-                android:id="@+id/player1_row"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/card_bg"
-                android:padding="12dp"
-                android:layout_marginBottom="6dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="👤 "
-                    android:textSize="20sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tv_p1_name"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="You"
-                        android:textColor="#4ADE80"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_p1_status"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Waiting..."
-                        android:textColor="#888888"
-                        android:textSize="11sp" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tv_p1_coins"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🪙 500"
-                    android:textColor="#FFD700"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Player 2 (Bot) -->
+            <!-- ══════ PLAYERS ROW ══════ -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/card_bg"
-                android:padding="12dp"
-                android:layout_marginBottom="6dp">
+                android:layout_marginBottom="10dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🤖 "
-                    android:textSize="20sp" />
-
+                <!-- P1 YOU -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tv_p2_name"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Rahim"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_p2_status"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Waiting..."
-                        android:textColor="#888888"
-                        android:textSize="11sp" />
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/player_card_you"
+                    android:padding="10dp"
+                    android:layout_marginEnd="5dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="👤" android:textSize="24sp" android:layout_marginBottom="4dp" />
+                    <TextView android:id="@+id/tv_p1_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="You" android:textColor="#4ADE80" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+                    <TextView android:id="@+id/tv_p1_coins" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🪙 500" android:textColor="#FFD700" android:textSize="11sp" android:layout_marginTop="2dp" />
+                    <TextView android:id="@+id/tv_p1_status" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="#555577" android:textSize="10sp" android:layout_marginTop="2dp" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tv_p2_coins"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🪙 500"
-                    android:textColor="#FFD700"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Player 3 (Bot) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/card_bg"
-                android:padding="12dp"
-                android:layout_marginBottom="6dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🤖 "
-                    android:textSize="20sp" />
-
+                <!-- P2 -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tv_p3_name"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Karim"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_p3_status"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Waiting..."
-                        android:textColor="#888888"
-                        android:textSize="11sp" />
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/player_card_bg"
+                    android:padding="10dp"
+                    android:layout_marginEnd="5dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🤖" android:textSize="24sp" android:layout_marginBottom="4dp" />
+                    <TextView android:id="@+id/tv_p2_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Rahim" android:textColor="#CCCCDD" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+                    <TextView android:id="@+id/tv_p2_coins" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🪙 500" android:textColor="#FFD700" android:textSize="11sp" android:layout_marginTop="2dp" />
+                    <TextView android:id="@+id/tv_p2_status" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="#555577" android:textSize="10sp" android:layout_marginTop="2dp" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tv_p3_coins"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🪙 500"
-                    android:textColor="#FFD700"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Player 4 (Bot) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/card_bg"
-                android:padding="12dp"
-                android:layout_marginBottom="14dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🤖 "
-                    android:textSize="20sp" />
-
+                <!-- P3 -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tv_p4_name"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Sumon"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_p4_status"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Waiting..."
-                        android:textColor="#888888"
-                        android:textSize="11sp" />
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/player_card_bg"
+                    android:padding="10dp"
+                    android:layout_marginEnd="5dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🤖" android:textSize="24sp" android:layout_marginBottom="4dp" />
+                    <TextView android:id="@+id/tv_p3_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Karim" android:textColor="#CCCCDD" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+                    <TextView android:id="@+id/tv_p3_coins" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🪙 500" android:textColor="#FFD700" android:textSize="11sp" android:layout_marginTop="2dp" />
+                    <TextView android:id="@+id/tv_p3_status" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="#555577" android:textSize="10sp" android:layout_marginTop="2dp" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tv_p4_coins"
-                    android:layout_width="wrap_content"
+                <!-- P4 -->
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="🪙 500"
-                    android:textColor="#FFD700"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/player_card_bg"
+                    android:padding="10dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🤖" android:textSize="24sp" android:layout_marginBottom="4dp" />
+                    <TextView android:id="@+id/tv_p4_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sumon" android:textColor="#CCCCDD" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+                    <TextView android:id="@+id/tv_p4_coins" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🪙 500" android:textColor="#FFD700" android:textSize="11sp" android:layout_marginTop="2dp" />
+                    <TextView android:id="@+id/tv_p4_status" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="#555577" android:textSize="10sp" android:layout_marginTop="2dp" />
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- ── Game Area: Pick a number ── -->
+            <!-- ══════ GAME BOARD ══════ -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@drawable/card_bg"
-                android:padding="16dp"
+                android:background="@drawable/game_card_bg"
+                android:padding="18dp"
                 android:layout_marginBottom="10dp">
 
                 <TextView
                     android:id="@+id/tv_game_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🎲 Pick a number (1-4) and place your bet!"
-                    android:textColor="#FFFFFF"
-                    android:textSize="15sp"
+                    android:text="🎲  Pick your lucky number"
+                    android:textColor="#EEEEFF"
+                    android:textSize="16sp"
                     android:textStyle="bold"
                     android:gravity="center"
-                    android:layout_marginBottom="14dp" />
+                    android:layout_marginBottom="16dp" />
 
-                <!-- Number buttons -->
+                <!-- 2x2 Number Grid -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:orientation="vertical"
                     android:gravity="center"
-                    android:layout_marginBottom="14dp">
+                    android:layout_marginBottom="16dp">
 
-                    <Button
-                        android:id="@+id/btn_pick_1"
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
-                        android:text="1"
-                        android:textSize="22sp"
-                        android:textStyle="bold"
-                        android:textColor="#FFFFFF"
-                        android:backgroundTint="#6C63FF"
-                        android:layout_marginEnd="10dp" />
-
-                    <Button
-                        android:id="@+id/btn_pick_2"
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
-                        android:text="2"
-                        android:textSize="22sp"
-                        android:textStyle="bold"
-                        android:textColor="#FFFFFF"
-                        android:backgroundTint="#6C63FF"
-                        android:layout_marginEnd="10dp" />
-
-                    <Button
-                        android:id="@+id/btn_pick_3"
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
-                        android:text="3"
-                        android:textSize="22sp"
-                        android:textStyle="bold"
-                        android:textColor="#FFFFFF"
-                        android:backgroundTint="#6C63FF"
-                        android:layout_marginEnd="10dp" />
-
-                    <Button
-                        android:id="@+id/btn_pick_4"
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
-                        android:text="4"
-                        android:textSize="22sp"
-                        android:textStyle="bold"
-                        android:textColor="#FFFFFF"
-                        android:backgroundTint="#6C63FF" />
-                </LinearLayout>
-
-                <!-- Bet amount -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:layout_marginBottom="14dp">
-
-                    <TextView
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Bet: "
-                        android:textColor="#CCCCCC"
-                        android:textSize="15sp" />
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+                        <FrameLayout android:layout_width="72dp" android:layout_height="72dp" android:layout_marginEnd="8dp">
+                            <Button android:id="@+id/btn_pick_1" android:layout_width="match_parent" android:layout_height="match_parent" android:text="1" android:textSize="28sp" android:textStyle="bold" android:textColor="#EEEEFF" android:background="@drawable/number_btn_bg" android:stateListAnimator="@null" />
+                        </FrameLayout>
+                        <FrameLayout android:layout_width="72dp" android:layout_height="72dp">
+                            <Button android:id="@+id/btn_pick_2" android:layout_width="match_parent" android:layout_height="match_parent" android:text="2" android:textSize="28sp" android:textStyle="bold" android:textColor="#EEEEFF" android:background="@drawable/number_btn_bg" android:stateListAnimator="@null" />
+                        </FrameLayout>
+                    </LinearLayout>
 
-                    <Button
-                        android:id="@+id/btn_bet_10"
+                    <LinearLayout
                         android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="10"
-                        android:textColor="#FFD700"
-                        android:backgroundTint="#2A2A3A"
-                        android:layout_marginEnd="6dp"
-                        android:minWidth="52dp" />
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <FrameLayout android:layout_width="72dp" android:layout_height="72dp" android:layout_marginEnd="8dp">
+                            <Button android:id="@+id/btn_pick_3" android:layout_width="match_parent" android:layout_height="match_parent" android:text="3" android:textSize="28sp" android:textStyle="bold" android:textColor="#EEEEFF" android:background="@drawable/number_btn_bg" android:stateListAnimator="@null" />
+                        </FrameLayout>
+                        <FrameLayout android:layout_width="72dp" android:layout_height="72dp">
+                            <Button android:id="@+id/btn_pick_4" android:layout_width="match_parent" android:layout_height="match_parent" android:text="4" android:textSize="28sp" android:textStyle="bold" android:textColor="#EEEEFF" android:background="@drawable/number_btn_bg" android:stateListAnimator="@null" />
+                        </FrameLayout>
+                    </LinearLayout>
+                </LinearLayout>
 
-                    <Button
-                        android:id="@+id/btn_bet_50"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="50"
-                        android:textColor="#FFD700"
-                        android:backgroundTint="#2A2A3A"
-                        android:layout_marginEnd="6dp"
-                        android:minWidth="52dp" />
+                <!-- Bet Chips -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Place your bet"
+                    android:textColor="#777799"
+                    android:textSize="12sp"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp"
+                    android:letterSpacing="0.08" />
 
-                    <Button
-                        android:id="@+id/btn_bet_100"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="100"
-                        android:textColor="#FFD700"
-                        android:backgroundTint="#2A2A3A"
-                        android:layout_marginEnd="6dp"
-                        android:minWidth="52dp" />
-
-                    <Button
-                        android:id="@+id/btn_bet_200"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="200"
-                        android:textColor="#FFD700"
-                        android:backgroundTint="#2A2A3A"
-                        android:minWidth="52dp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginBottom="14dp">
+                    <Button android:id="@+id/btn_bet_10" android:layout_width="62dp" android:layout_height="42dp" android:text="10" android:textColor="#BBB" android:textSize="14sp" android:textStyle="bold" android:background="@drawable/bet_chip_bg" android:stateListAnimator="@null" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btn_bet_50" android:layout_width="62dp" android:layout_height="42dp" android:text="50" android:textColor="#BBB" android:textSize="14sp" android:textStyle="bold" android:background="@drawable/bet_chip_bg" android:stateListAnimator="@null" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btn_bet_100" android:layout_width="62dp" android:layout_height="42dp" android:text="100" android:textColor="#BBB" android:textSize="14sp" android:textStyle="bold" android:background="@drawable/bet_chip_bg" android:stateListAnimator="@null" android:layout_marginEnd="6dp" />
+                    <Button android:id="@+id/btn_bet_200" android:layout_width="62dp" android:layout_height="42dp" android:text="200" android:textColor="#BBB" android:textSize="14sp" android:textStyle="bold" android:background="@drawable/bet_chip_bg" android:stateListAnimator="@null" />
                 </LinearLayout>
 
                 <TextView
                     android:id="@+id/tv_selected_info"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Select a number and bet amount"
-                    android:textColor="#888888"
+                    android:text="Select number &amp; bet to play"
+                    android:textColor="#555577"
                     android:textSize="13sp"
                     android:gravity="center"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="14dp" />
 
-                <!-- Play button -->
+                <TextView
+                    android:id="@+id/tv_pot"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textColor="#FFD700"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:visibility="gone"
+                    android:layout_marginBottom="10dp" />
+
                 <Button
                     android:id="@+id/btn_play_round"
                     android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:text="🎲 Play Round"
+                    android:layout_height="54dp"
+                    android:text="🎲  SPIN"
                     android:textColor="#FFFFFF"
-                    android:textSize="16sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
-                    android:backgroundTint="#4CAF50"
-                    android:enabled="false" />
+                    android:background="@drawable/play_btn_bg"
+                    android:stateListAnimator="@null"
+                    android:enabled="false"
+                    android:alpha="0.4" />
             </LinearLayout>
 
-            <!-- ── Result Area ── -->
+            <!-- ══════ RESULT ══════ -->
             <LinearLayout
                 android:id="@+id/result_panel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@drawable/card_bg"
-                android:padding="16dp"
+                android:background="@drawable/result_card_bg"
+                android:padding="20dp"
                 android:gravity="center"
                 android:visibility="gone"
                 android:layout_marginBottom="10dp">
 
                 <TextView
-                    android:id="@+id/tv_result_number"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🎯 3"
-                    android:textSize="40sp"
+                    android:text="WINNING NUMBER"
+                    android:textColor="#555577"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.2"
+                    android:layout_marginBottom="6dp" />
+
+                <TextView
+                    android:id="@+id/tv_result_number"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:gravity="center"
+                    android:text="?"
+                    android:textSize="36sp"
                     android:textStyle="bold"
-                    android:textColor="#FFD700"
-                    android:layout_marginBottom="8dp" />
+                    android:textColor="#1A1A00"
+                    android:background="@drawable/coin_circle"
+                    android:layout_marginBottom="12dp" />
 
                 <TextView
                     android:id="@+id/tv_result_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="You Win!"
-                    android:textSize="20sp"
+                    android:text=""
+                    android:textSize="22sp"
                     android:textStyle="bold"
                     android:textColor="#4ADE80"
                     android:gravity="center"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="4dp" />
 
                 <TextView
                     android:id="@+id/tv_result_detail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="+300 coins"
-                    android:textSize="16sp"
-                    android:textColor="#CCCCCC"
+                    android:text=""
+                    android:textSize="15sp"
+                    android:textColor="#AAAACC"
                     android:gravity="center" />
+            </LinearLayout>
+
+            <!-- ══════ HISTORY ══════ -->
+            <LinearLayout
+                android:id="@+id/history_panel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/game_card_bg"
+                android:padding="14dp"
+                android:visibility="gone"
+                android:layout_marginBottom="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="LAST RESULTS"
+                    android:textColor="#555577"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tv_history"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="#888899"
+                    android:textSize="12sp"
+                    android:lineSpacingExtra="4dp" />
             </LinearLayout>
 
         </LinearLayout>
