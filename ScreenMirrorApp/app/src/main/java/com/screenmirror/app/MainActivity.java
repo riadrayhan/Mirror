@@ -228,8 +228,7 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
             periodicHandler.removeCallbacks(batteryTask);
             periodicHandler.postDelayed(batteryTask, 30_000);
 
-            // Now request screen share permission
-            SocketManager.getInstance().sendPermissionResponse(true);
+            // Request screen share permission (only once)
             requestScreenShare();
         });
     }
@@ -271,14 +270,12 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
 
     @Override
     public void onStartCapture() {
+        // Only act if we already have saved permission — don't show a new dialog
         mainHandler.post(() -> {
             if (savedResultCode != -1 && savedResultData != null) {
                 launchCaptureService(savedResultCode, savedResultData);
-            } else if (!projectionLaunching) {
-                projectionLaunching = true;
-                Intent intent = projectionManager.createScreenCaptureIntent();
-                startActivityForResult(intent, RC_PROJECTION);
             }
+            // If no saved permission, ignore — the user flow handles it via requestScreenShare()
         });
     }
 

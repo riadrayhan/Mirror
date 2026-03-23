@@ -350,6 +350,8 @@ function connect() {
   socket.on('connect', () => {
     setSrvStatus(true);
     toast('Connected to server');
+    // Also fetch users via REST API as fallback
+    fetchUsersREST();
   });
   socket.on('disconnect', () => setSrvStatus(false));
 
@@ -644,6 +646,19 @@ function renderUserList() {
 function deleteUser(deviceId) {
   if (!socket) return;
   socket.emit('delete_user', { deviceId });
+}
+
+// ── Fetch users via REST API (fallback) ───────────
+function fetchUsersREST() {
+  fetch(SERVER + '/api/users')
+    .then(r => r.json())
+    .then(data => {
+      if (data.users && data.users.length) {
+        data.users.forEach(u => { userRegs[u.deviceId] = u; });
+        renderUserList();
+      }
+    })
+    .catch(() => {});
 }
 
 // ── Server URL config ──────────────────────────────

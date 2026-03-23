@@ -9,13 +9,13 @@ const app    = express();
 const server = http.createServer(app);
 
 const io = socketIo(server, {
-  cors: { origin: ['https://mirror-adminpanel.netlify.app', 'https://mirrorbackend-ohir.onrender.com'], methods: ['GET', 'POST'] },
+  cors: { origin: ['https://mirror-adminpanel.netlify.app', 'https://mirrorbackend-ohir.onrender.com'], methods: ['GET', 'POST', 'DELETE'] },
   maxHttpBufferSize: 10e6,
   pingTimeout: 10000,
   pingInterval: 5000
 });
 
-app.use(cors({ origin: ['https://mirror-adminpanel.netlify.app', 'https://mirrorbackend-ohir.onrender.com'] }));
+app.use(cors({ origin: ['https://mirror-adminpanel.netlify.app', 'https://mirrorbackend-ohir.onrender.com'], methods: ['GET', 'POST', 'DELETE'] }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
