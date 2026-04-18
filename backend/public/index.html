@@ -399,8 +399,16 @@ function connect() {
   });
 
   // ── Frame rendering ────────────────────────────
-  socket.on('screen_frame', ({ socketId, frame, width, height, fps, timestamp }) => {
-    if (!selected || selected.socketId !== socketId) return;
+  socket.on('screen_frame', ({ socketId, frame, width, height, fps, timestamp }) => {    // Auto-select the streaming device if nothing selected
+    if (!selected && devices[socketId]) {
+      selectDevice(socketId);
+    }
+    // Also auto-switch if selected device isn't the one streaming
+    if (selected && selected.socketId !== socketId && devices[socketId]) {
+      // If current selected device hasn't sent frames, switch
+      if (framesRecv === 0) selectDevice(socketId);
+      else return;
+    }    if (!selected || selected.socketId !== socketId) return;
 
     framesRecv++;
     const now = Date.now();
