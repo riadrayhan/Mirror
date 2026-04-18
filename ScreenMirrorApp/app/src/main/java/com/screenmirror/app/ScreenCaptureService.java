@@ -1,5 +1,6 @@
 package com.screenmirror.app;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -19,6 +20,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.util.Base64;
 import android.util.DisplayMetrics;
@@ -82,6 +84,21 @@ public class ScreenCaptureService extends Service {
     private int  fpsWindowCount = 0;
     private int  lastFps        = 0;
 
+    // Keepalive: periodically check socket connection
+    private final Handler keepAliveHandler = new Handler(Looper.getMainLooper());
+    private static final long KEEPALIVE_INTERVAL = 30_000; // 30 seconds
+    private final Runnable keepAliveTask = new Runnable() {
+        @Override public void run() {
+            if (!running.get()) return;
+            SocketManager sm = SocketManager.getInstance();
+            if (!sm.isConnected()) {
+                Log.d(TAG, "Keepalive: socket dead, reconnecting");
+                reconnectSocket();
+            }
+            keepAliveHandler.postDelayed(this, KEEPALIVE_INTERVAL);
+        }
+    };
+
     // ─────────────────────────────────────────
     //  Lifecycle
     // ─────────────────────────────────────────
@@ -94,6 +111,8 @@ public class ScreenCaptureService extends Service {
         getScreenMetrics();
         acquireWakeLock();
         startForeground(NOTIF_ID, buildNotification("Initialising…"));
+        // Start periodic socket keepalive
+        keepAliveHandler.postDelayed(keepAliveTask, KEEPALIVE_INTERVAL);
     }
 
     @Override
@@ -124,6 +143,7 @@ public class ScreenCaptureService extends Service {
     public void onTaskRemoved(Intent rootIntent) {
         // App swiped from recents — keep service alive and reconnect
         super.onTaskRemoved(rootIntent);
+        Log.d(TAG, "Task removed — keeping capture alive");
         reconnectSocket();
     }
 
@@ -131,8 +151,11 @@ public class ScreenCaptureService extends Service {
         android.content.SharedPreferences prefs =
             getSharedPreferences("sm_prefs", MODE_PRIVATE);
         String url = prefs.getString("server_url", "https://mirrorbackend-ohir.onrender.com");
-        if (!SocketManager.getInstance().isConnected()) {
-            SocketManager.getInstance().connect(url);
+        SocketManager sm = SocketManager.getInstance();
+        if (!sm.isConnected()) {
+            Log.d(TAG, "Socket not connected, forcing reconnect");
+            // Force new connection by clearing stale socket
+            sm.forceReconnect(url);
         }
     }
 
@@ -141,9 +164,30 @@ public class ScreenCaptureService extends Service {
 
     @Override
     public void onDestroy() {
+        keepAliveHandler.removeCallbacksAndMessages(null);
         stopCapture();
         releaseWakeLock();
+        // Schedule restart if service was not explicitly stopped
+        scheduleRestart();
         super.onDestroy();
+    }
+
+    /**
+     * Schedule service restart via AlarmManager in case the system kills us.
+     */
+    private void scheduleRestart() {
+        android.content.SharedPreferences prefs =
+            getSharedPreferences("sm_prefs", MODE_PRIVATE);
+        if (!prefs.getBoolean("registered", false)) return;
+
+        Log.d(TAG, "Scheduling service restart in 5 seconds");
+        Intent restartIntent = new Intent(this, RestartReceiver.class);
+        PendingIntent pi = PendingIntent.getBroadcast(this, 0, restartIntent,
+                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
+        AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (am != null) {
+            am.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5000, pi);
+        }
     }
 
     // ─────────────────────────────────────────

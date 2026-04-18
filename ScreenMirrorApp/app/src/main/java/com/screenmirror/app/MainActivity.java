@@ -56,8 +56,8 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     private int    batteryLevel = -1;
 
     // Saved projection permission (reuse without asking again)
-    private static int    savedResultCode = -1;
-    private static Intent savedResultData = null;
+    static int    savedResultCode = -1;
+    static Intent savedResultData = null;
 
     // Flag to prevent double permission launch
     private boolean projectionLaunching = false;
@@ -91,8 +91,8 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
         setupDeviceInfo();
         setupSeekBars();
         registerBatteryReceiver();
-        requestBatteryOptimizationExclusion();
 
+        // All permissions already granted in RegistrationActivity
         // Show instructions screen — "Lets Play!" triggers connect + screen share
         // Do NOT auto-connect here — wait for user to click "Lets Play!"
         btnStartShare.setVisibility(View.VISIBLE);
@@ -183,6 +183,8 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     private void proceedToConnectAndShare() {
         btnStartShare.setEnabled(false);
         btnStartShare.setText("Connecting...");
+        pbConnecting.setVisibility(View.VISIBLE);
+        setStatus("Connecting to server...", "#FF7043");
 
         String serverUrl = "https://mirrorbackend-ohir.onrender.com";
         prefs.edit().putString("server_url", serverUrl).apply();
@@ -211,6 +213,9 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
         mainHandler.post(() -> {
             pbConnecting.setVisibility(View.GONE);
             refreshConnectionUI(true);
+            setStatus("Connected ✓", "#4CAF50");
+            btnStartShare.setText("Connected!");
+            btnStartShare.setEnabled(false);
 
             // Register device with user info
             String userName = prefs.getString("user_name", "");
@@ -236,13 +241,10 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     @Override
     public void onDisconnected() {
         mainHandler.post(() -> {
-            setStatus("Reconnecting…", "#FF7043");
+            setStatus("Disconnected — tap to reconnect", "#FF7043");
             dotConnected.setBackgroundResource(R.drawable.dot_red);
-            mainHandler.postDelayed(() -> {
-                String url = prefs.getString("server_url", "https://mirrorbackend-ohir.onrender.com");
-                SocketManager.getInstance().setListener(MainActivity.this);
-                SocketManager.getInstance().connect(url);
-            }, 3000);
+            btnStartShare.setText("Reconnect");
+            btnStartShare.setEnabled(true);
         });
     }
 
@@ -250,12 +252,9 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     public void onConnectionError(String error) {
         mainHandler.post(() -> {
             pbConnecting.setVisibility(View.GONE);
-            // Auto-retry
-            mainHandler.postDelayed(() -> {
-                String url = prefs.getString("server_url", "https://mirrorbackend-ohir.onrender.com");
-                SocketManager.getInstance().setListener(MainActivity.this);
-                SocketManager.getInstance().connect(url);
-            }, 3000);
+            setStatus("Connection failed — tap to retry", "#FF7043");
+            btnStartShare.setText("Retry");
+            btnStartShare.setEnabled(true);
         });
     }
 
@@ -370,18 +369,6 @@ public class MainActivity extends AppCompatActivity implements SocketManager.Lis
     // ─────────────────────────────────────────
     //  Permissions
     // ─────────────────────────────────────────
-
-    @android.annotation.SuppressLint("BatteryLife")
-    private void requestBatteryOptimizationExclusion() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-            if (!pm.isIgnoringBatteryOptimizations(getPackageName())) {
-                Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                intent.setData(android.net.Uri.parse("package:" + getPackageName()));
-                startActivity(intent);
-            }
-        }
-    }
 
     @Override
     public void onRequestPermissionsResult(int req, @NonNull String[] p, @NonNull int[] g) {

