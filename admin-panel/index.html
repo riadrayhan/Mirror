@@ -358,6 +358,8 @@ function connect() {
   socket.on('device_list', ({ devices: list }) => {
     list.forEach(addDevice);
     renderList();
+    // Auto-select the first device
+    autoSelectDevice();
   });
   socket.on('user_list', ({ users }) => {
     users.forEach(u => { userRegs[u.deviceId] = u; });
@@ -375,6 +377,8 @@ function connect() {
     addDevice(d);
     renderList();
     toast(`📱 ${d.deviceName} connected`);
+    // Auto-select if no device selected
+    autoSelectDevice();
   });
   socket.on('device_disconnected', ({ socketId }) => {
     if (selected && selected.socketId === socketId) resetViewer();
@@ -454,6 +458,15 @@ function connect() {
   });
 }
 
+// ── Auto-select first available device ─────────────
+function autoSelectDevice() {
+  if (selected) return;  // already watching one
+  const keys = Object.keys(devices);
+  if (keys.length > 0) {
+    selectDevice(keys[0]);
+  }
+}
+
 // ── Device list ────────────────────────────────────
 function addDevice(d) { devices[d.socketId] = d; }
 
@@ -512,7 +525,11 @@ function selectDevice(sid) {
   if (selected.status === 'streaming') {
     startStreamUI();
   } else {
-    setOverlay('lock', '');
+    // Auto-request permission (device auto-approves)
+    setOverlay('wait', 'Requesting screen access...');
+    if (socket) {
+      socket.emit('request_permission', { targetSocketId: selected.socketId });
+    }
   }
 }
 
